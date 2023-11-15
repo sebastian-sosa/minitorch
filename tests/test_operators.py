@@ -1,8 +1,9 @@
+from math import isclose
 from typing import Callable, List, Tuple
 
 import pytest
-from hypothesis import given
-from hypothesis.strategies import lists
+from hypothesis import assume, example, given
+from hypothesis.strategies import floats, lists, tuples
 
 from minitorch import MathTest
 from minitorch.operators import (
@@ -100,52 +101,61 @@ def test_eq(a: float) -> None:
 
 @pytest.mark.task0_2
 @given(small_floats)
-def test_sigmoid(a: float) -> None:
+def test_sigmoid_properties(a: float) -> None:
     """Check properties of the sigmoid function, specifically
     * It is always between 0.0 and 1.0.
     * one minus sigmoid is the same as sigmoid of the negative
+    """
+    assert sigmoid(a) >= 0.0
+    assert sigmoid(a) <= 1.0
+    assert isclose(1 - sigmoid(a), sigmoid(-a), abs_tol=1e-7)
+
+
+@pytest.mark.task0_2
+def test_sigmoid_at_zero() -> None:
+    """Check properties of the sigmoid function, specifically
     * It crosses 0 at 0.5
+    """
+    assert sigmoid(0) == 0.5
+
+
+@pytest.mark.task0_2
+@given(tuples(floats(-10, 10), floats(-10, 10)).filter(lambda x: abs(x[0]) > 1e-15 and x[0] < x[1]))
+def test_sigmoid_is_increasing(t: Tuple[float, float]) -> None:
+    """Check properties of the sigmoid function, specifically
     * It is  strictly increasing.
     """
-    # TODO: Implement for Task 0.2.
-    raise NotImplementedError('Need to implement for Task 0.2')
+    assert sigmoid(t[0]) < sigmoid(t[1])
 
 
 @pytest.mark.task0_2
 @given(small_floats, small_floats, small_floats)
 def test_transitive(a: float, b: float, c: float) -> None:
     "Test the transitive property of less-than (a < b and b < c implies a < c)"
-    # TODO: Implement for Task 0.2.
-    raise NotImplementedError('Need to implement for Task 0.2')
+    a, b, c = sorted([a, b, c])
+    assume(a != b and a != c and b != c)
+    assert lt(a, b) and lt(b, c)
+    assert lt(a, c)
 
 
 @pytest.mark.task0_2
-def test_symmetric() -> None:
+@given(small_floats, small_floats)
+def test_symmetric(a: float, b: float) -> None:
     """
     Write a test that ensures that :func:`minitorch.operators.mul` is symmetric, i.e.
     gives the same value regardless of the order of its input.
     """
-    # TODO: Implement for Task 0.2.
-    raise NotImplementedError('Need to implement for Task 0.2')
+    assert mul(a, b) == mul(b, a)
 
 
 @pytest.mark.task0_2
-def test_distribute() -> None:
+@given(small_floats, small_floats, small_floats)
+def test_distribute(x: float, y: float, z: float) -> None:
     r"""
     Write a test that ensures that your operators distribute, i.e.
     :math:`z \times (x + y) = z \times x + z \times y`
     """
-    # TODO: Implement for Task 0.2.
-    raise NotImplementedError('Need to implement for Task 0.2')
-
-
-@pytest.mark.task0_2
-def test_other() -> None:
-    """
-    Write a test that ensures some other property holds for your functions.
-    """
-    # TODO: Implement for Task 0.2.
-    raise NotImplementedError('Need to implement for Task 0.2')
+    assert isclose(mul(z, add(x, y)), add(mul(z, x), mul(z, y)), abs_tol=1e-7)
 
 
 # ## Task 0.3  - Higher-order functions
