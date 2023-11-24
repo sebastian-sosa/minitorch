@@ -1,4 +1,3 @@
-from math import isclose
 from typing import Callable, List, Tuple
 
 import pytest
@@ -15,6 +14,7 @@ from minitorch.operators import (
     inv_back,
     log_back,
     lt,
+    map,
     max,
     mul,
     neg,
@@ -24,6 +24,7 @@ from minitorch.operators import (
     relu_back,
     sigmoid,
     sum,
+    zipWith,
 )
 
 from .strategies import assert_close, small_floats
@@ -108,7 +109,7 @@ def test_sigmoid_properties(a: float) -> None:
     """
     assert sigmoid(a) >= 0.0
     assert sigmoid(a) <= 1.0
-    assert isclose(1 - sigmoid(a), sigmoid(-a), abs_tol=1e-7)
+    assert_close(1 - sigmoid(a), sigmoid(-a))
 
 
 @pytest.mark.task0_2
@@ -155,7 +156,7 @@ def test_distribute(x: float, y: float, z: float) -> None:
     Write a test that ensures that your operators distribute, i.e.
     :math:`z \times (x + y) = z \times x + z \times y`
     """
-    assert isclose(mul(z, add(x, y)), add(mul(z, x), mul(z, y)), abs_tol=1e-7)
+    assert_close(mul(z, add(x, y)), add(mul(z, x), mul(z, y)))
 
 
 # ## Task 0.3  - Higher-order functions
@@ -183,8 +184,7 @@ def test_sum_distribute(ls1: List[float], ls2: List[float]) -> None:
     Write a test that ensures that the sum of `ls1` plus the sum of `ls2`
     is the same as the sum of each element of `ls1` plus each element of `ls2`.
     """
-    # TODO: Implement for Task 0.3.
-    raise NotImplementedError('Need to implement for Task 0.3')
+    assert_close(sum(ls1) + sum(ls2), sum(ls1 + ls2))
 
 
 @pytest.mark.task0_3
@@ -201,11 +201,41 @@ def test_prod(x: float, y: float, z: float) -> None:
 
 @pytest.mark.task0_3
 @given(lists(small_floats))
+def test_map(ls: List[float]) -> None:
+    def square(x: float) -> float:
+        return x * x
+    result = map(square)(ls)
+
+    # Check if each element in the result is the square of the corresponding
+    # element in the original list
+    for original, squared in zip(ls, result):
+        assert_close(squared, original * original)
+
+
+@pytest.mark.task0_3
+@given(lists(small_floats))
 def test_negList(ls: List[float]) -> None:
     check = negList(ls)
     for i, j in zip(ls, check):
         assert_close(i, -j)
 
+@pytest.mark.task0_3
+@given(lists(small_floats, min_size=5, max_size=5), lists(small_floats, min_size=5, max_size=5))
+def test_zip_with(ls1: List[float], ls2: List[float]) -> None:
+    """
+    Test the zipWith function. It should apply the given function to each pair of elements
+    from the two lists and return a new list with the results.
+    """
+    # Define a simple function to use with zipWith
+    def add(x: float, y: float) -> float:
+        return x + y
+
+    # Use zipWith with the add function and the two lists
+    result = zipWith(add)(ls1, ls2)
+
+    # Check if each element in the result is the sum of the corresponding elements in the original lists
+    for x, y, z in zip(ls1, ls2, result):
+        assert_close(z, add(x, y))
 
 # ## Generic mathematical tests
 
